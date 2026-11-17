@@ -1,0 +1,19 @@
+{
+  "name": "epk-trainer",
+  "version": "1.0.0",
+  "description": "Тренажёр по моделированию eEPK (Ereignisgesteuerte Prozesskette) с автопроверкой",
+  "scripts": {
+    "test": "node test/core.test.mjs && node test/dom.test.mjs",
+    "bundle": "npx esbuild js/app.js --bundle --format=iife --outfile=/tmp/app.bundle.js",
+    "serve": "python3 -m http.server 8099"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "jsdom": "^31.0.1"
+  }
+}

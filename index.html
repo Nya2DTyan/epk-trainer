@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EPK-Trainer — тренажёр по событийным цепочкам процессов</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">EPK</span>
+    <div>
+      <h1>Тренажёр eEPK</h1>
+      <p>Ereignisgesteuerte Prozesskette — строим и проверяем по правилам</p>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" data-view="editor">Редактор</button>
+    <button class="tab" data-view="theory">Правила</button>
+  </nav>
+  <div class="progress-chip" id="progressChip">0 / 8 заданий</div>
+</header>
+
+<main id="view-editor" class="layout">
+
+  <!-- ---------------------------------------------------------- левая колонка -->
+  <aside class="panel panel-left">
+    <div class="panel-head">
+      <h2>Задание</h2>
+      <span class="level" id="taskLevel">Уровень 1</span>
+    </div>
+
+    <select id="taskSelect" class="task-select"></select>
+
+    <h3 id="taskTitle" class="task-title"></h3>
+    <p id="taskSubtitle" class="task-subtitle"></p>
+
+    <div class="task-goal" id="taskGoal"></div>
+
+    <details class="task-text" open>
+      <summary>Текст процесса (DE)</summary>
+      <p id="taskText"></p>
+      <p class="ru" id="taskTextRu"></p>
+    </details>
+
+    <details class="task-hints">
+      <summary>Подсказки</summary>
+      <ul id="taskHints"></ul>
+    </details>
+
+    <div class="palette">
+      <h3>Элементы</h3>
+      <p class="hint">Клик — добавить в центр. Перетащите на холст, чтобы поставить в нужное место.</p>
+      <div class="palette-grid" id="palette"></div>
+    </div>
+
+    <div class="props" id="props" hidden>
+      <div class="props-head">
+        <span id="propsType"></span>
+        <button id="propsClose" class="icon-btn">✕</button>
+      </div>
+      <label class="field">
+        <span>Название</span>
+        <input id="propsLabel" type="text" autocomplete="off">
+      </label>
+      <div class="props-actions">
+        <button id="propsDelete" class="btn btn-danger btn-sm">Удалить</button>
+      </div>
+    </div>
+
+    <div class="tools">
+      <button id="btnCheck" class="btn btn-primary">Проверить</button>
+      <button id="btnLayout" class="btn">Автораскладка</button>
+      <button id="btnUndo" class="btn" title="Ctrl+Z">↶ Отменить</button>
+      <button id="btnClear" class="btn btn-danger">Очистить</button>
+      <button id="btnSolution" class="btn btn-ghost">Показать эталон</button>
+      <button id="btnExportSvg" class="btn btn-ghost">SVG</button>
+      <button id="btnExportPng" class="btn btn-ghost">PNG</button>
+    </div>
+  </aside>
+
+  <!-- ------------------------------------------------------------- холст -->
+  <section class="canvas-wrap">
+    <div class="canvas-toolbar">
+      <div class="mode-group">
+        <button class="mode active" data-mode="select" title="Выделение и перемещение">Выбор</button>
+        <button class="mode" data-mode="connect" title="Соединить два элемента">Связь</button>
+        <button class="mode" data-mode="assoc" title="Привязать орг. единицу/данные к функции">Привязка</button>
+      </div>
+      <div class="canvas-hint" id="canvasHint">Клик по элементу — выделить. Тяните за точку справа, чтобы провести связь.</div>
+      <div class="zoom">
+        <button id="zoomOut">−</button>
+        <span id="zoomLabel">100%</span>
+        <button id="zoomIn">+</button>
+        <button id="zoomFit" title="Показать всё">⤢</button>
+      </div>
+    </div>
+
+    <svg id="canvas" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#7f8fa6"></path>
+        </marker>
+        <marker id="arrow-hl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff6b6b"></path>
+        </marker>
+        <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+          <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#1e2833" stroke-width="1"></path>
+        </pattern>
+      </defs>
+      <rect id="gridRect" x="-5000" y="-5000" width="10000" height="10000" fill="url(#grid)"></rect>
+      <g id="viewport">
+        <g id="edges"></g>
+        <g id="nodes"></g>
+        <g id="overlay"></g>
+      </g>
+    </svg>
+
+  </section>
+
+  <!-- ----------------------------------------------------------- правая колонка -->
+  <aside class="panel panel-right">
+    <div class="panel-head">
+      <h2>Проверка</h2>
+      <span class="badge" id="liveBadge">—</span>
+    </div>
+
+    <div class="score" id="scoreBox" hidden>
+      <div class="score-ring" id="scoreRing"><span id="scoreValue">0%</span></div>
+      <div class="score-meta" id="scoreMeta"></div>
+    </div>
+
+    <div class="issues" id="issues">
+      <p class="empty">Добавьте элементы и связи — замечания появятся здесь автоматически.</p>
+    </div>
+
+    <details class="legend">
+      <summary>Справка по элементам</summary>
+      <ul class="legend-list" id="legendList"></ul>
+    </details>
+  </aside>
+</main>
+
+<!-- --------------------------------------------------------------- теория -->
+<main id="view-theory" class="theory" hidden>
+  <h2>Правила, по которым проверяются модели</h2>
+  <p class="lead">Все правила взяты из учебного материала: элементы EPK, операторы, синтаксис, процессные интерфейсы, обратные связи.</p>
+
+  <div class="theory-grid">
+    <article class="card">
+      <h3>1. Чередование Ereignis ↔ Funktion</h3>
+      <p>На событие следует функция, на функцию — событие. Два события или две функции подряд недопустимы.</p>
+      <pre>Ereignis → Funktion → Ereignis</pre>
+    </article>
+
+    <article class="card">
+      <h3>2. Начало и конец</h3>
+      <p>Процесс начинается и заканчивается событием либо процессным интерфейсом. Событие — это состояние, а не действие.</p>
+      <pre>«Material ist geliefert» ✓
+«Material liefern» ✗</pre>
+    </article>
+
+    <article class="card">
+      <h3>3. Операторы</h3>
+      <p>Оператор соединяет несколько событий или несколько функций. Split: один вход, ≥2 выхода. Join: ≥2 входа, один выход.</p>
+      <ul>
+        <li><b>∧ UND</b> — все / одновременно</li>
+        <li><b>∨ ODER</b> — минимум один, возможно оба</li>
+        <li><b>× XOR</b> — ровно один</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <h3>4. Split и Join согласованы</h3>
+      <p>Ветви, разведённые оператором, сводятся оператором того же типа: UND-split → UND-join, XOR-split → XOR-join.</p>
+    </article>
+
+    <article class="card">
+      <h3>5. Организация и данные</h3>
+      <p>Орг. единицы, документы, кластеры данных и системы привязываются только к функциям — пунктирной связью, вне контрольного потока.</p>
+    </article>
+
+    <article class="card">
+      <h3>6. Процессные интерфейсы</h3>
+      <p>Интерфейс обозначает вход из предыдущего или выход в следующий процесс. Имя интерфейса = имя вызываемой EPK, а конечное и начальное события стыкуемых процессов совпадают.</p>
+    </article>
+
+    <article class="card">
+      <h3>7. Обратные связи</h3>
+      <p>Rückschleife допустима, но должна содержать контрольную функцию, ограничивающую число повторов. «Пустое» ожидание событием не моделируется — ожидание это функция.</p>
+    </article>
+
+    <article class="card">
+      <h3>8. Именование</h3>
+      <p>Событие — «Objekt + ist/sind + Zustand». Функция — инфинитив: «Rechnung prüfen», «Kundendaten erfassen».</p>
+    </article>
+  </div>
+
+  <h2>Операторы: что означает каждый</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Оператор</th><th>Join (события → функция)</th><th>Split (функция → события)</th></tr></thead>
+      <tbody>
+        <tr><td>∧ UND</td><td>должны наступить все события</td><td>наступают все события одновременно</td></tr>
+        <tr><td>∨ ODER</td><td>достаточно одного, возможно все</td><td>наступает минимум одно, возможно все</td></tr>
+        <tr><td>× XOR</td><td>ровно одно из событий</td><td>ровно одно из событий</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- ------------------------------------------------------------- модалка -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalTitle">Эталонное решение</h3>
+      <button id="modalClose" class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
